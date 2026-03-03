@@ -23,34 +23,34 @@ const Payload3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
     // Scene setup
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xf8f9fa);
-    
+
     // Camera setup
     const initWidth = mountRef.current.clientWidth || 400;
     const initHeight = mountRef.current.clientHeight || 300;
     const camera = new THREE.PerspectiveCamera(50, initWidth / initHeight, 0.1, 1000);
     camera.position.set(0, 5, 10);
     camera.lookAt(0, 0, 0);
-    
+
     // Renderer setup
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(initWidth, initHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    
+
     mountRef.current.appendChild(renderer.domElement);
-    
+
     // Lighting
     const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
     scene.add(ambientLight);
-    
+
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(10, 10, 5);
     directionalLight.castShadow = true;
     directionalLight.shadow.mapSize.width = 2048;
     directionalLight.shadow.mapSize.height = 2048;
     scene.add(directionalLight);
-    
+
     // Ground plane
     const groundGeometry = new THREE.PlaneGeometry(20, 20);
     const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x87CEEB });
@@ -59,13 +59,13 @@ const Payload3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
     ground.position.y = -2;
     ground.receiveShadow = true;
     scene.add(ground);
-    
+
     // Create payload model (cylindrical)
     const payloadGroup = new THREE.Group();
-    
+
     // Main payload body (cylinder)
     const bodyGeometry = new THREE.CylinderGeometry(0.4, 0.4, 2, 12);
-    const bodyMaterial = new THREE.MeshPhongMaterial({ 
+    const bodyMaterial = new THREE.MeshPhongMaterial({
       color: 0x4169E1,
       shininess: 100
     });
@@ -73,10 +73,10 @@ const Payload3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
     payloadBody.position.y = 1;
     payloadBody.castShadow = true;
     payloadGroup.add(payloadBody);
-    
+
     // Top cap
     const topCapGeometry = new THREE.CylinderGeometry(0.4, 0.3, 0.3, 12);
-    const topCapMaterial = new THREE.MeshPhongMaterial({ 
+    const topCapMaterial = new THREE.MeshPhongMaterial({
       color: 0x6495ED,
       shininess: 100
     });
@@ -84,10 +84,10 @@ const Payload3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
     topCap.position.y = 2.15;
     topCap.castShadow = true;
     payloadGroup.add(topCap);
-    
+
     // Bottom cap
     const bottomCapGeometry = new THREE.CylinderGeometry(0.4, 0.3, 0.3, 12);
-    const bottomCapMaterial = new THREE.MeshPhongMaterial({ 
+    const bottomCapMaterial = new THREE.MeshPhongMaterial({
       color: 0x1E90FF,
       shininess: 100
     });
@@ -95,7 +95,7 @@ const Payload3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
     bottomCap.position.y = -0.15;
     bottomCap.castShadow = true;
     payloadGroup.add(bottomCap);
-    
+
     // Antenna (small cylinder on top)
     const antennaGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.5, 8);
     const antennaMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
@@ -103,14 +103,14 @@ const Payload3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
     antenna.position.y = 2.5;
     antenna.castShadow = true;
     payloadGroup.add(antenna);
-    
+
     // Solar panels (4 small rectangles around the body)
     const panelGeometry = new THREE.BoxGeometry(0.1, 1.5, 0.3);
-    const panelMaterial = new THREE.MeshPhongMaterial({ 
+    const panelMaterial = new THREE.MeshPhongMaterial({
       color: 0x2F4F4F,
       shininess: 50
     });
-    
+
     for (let i = 0; i < 4; i++) {
       const panel = new THREE.Mesh(panelGeometry, panelMaterial);
       const angle = (i * Math.PI) / 2;
@@ -121,56 +121,56 @@ const Payload3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
       panel.castShadow = true;
       payloadGroup.add(panel);
     }
-    
+
     // Position payload
     payloadGroup.position.y = 0;
     scene.add(payloadGroup);
-    
+
     payloadRef.current = payloadGroup;
     sceneRef.current = scene;
     rendererRef.current = renderer;
     cameraRef.current = camera;
-    
+
     // Mouse controls
     let isMouseDown = false;
     let mouseX = 0;
     let mouseY = 0;
     let cameraAngleX = 0;
     let cameraAngleY = 0;
-    
+
     const onMouseDown = (event) => {
       isMouseDown = true;
       mouseX = event.clientX;
       mouseY = event.clientY;
     };
-    
+
     const onMouseUp = () => {
       isMouseDown = false;
     };
-    
+
     const onMouseMove = (event) => {
       if (isMouseDown) {
         const deltaX = event.clientX - mouseX;
         const deltaY = event.clientY - mouseY;
-        
+
         cameraAngleX += deltaY * 0.01;
-        cameraAngleY += deltaX * 0.01;
-        
+        cameraAngleY -= deltaX * 0.01;
+
         // Limit vertical rotation
-        cameraAngleX = Math.max(-Math.PI/2, Math.min(Math.PI/2, cameraAngleX));
-        
+        cameraAngleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, cameraAngleX));
+
         // Update camera position
         const radius = 10;
         camera.position.x = Math.sin(cameraAngleY) * Math.cos(cameraAngleX) * radius;
         camera.position.y = Math.sin(cameraAngleX) * radius;
         camera.position.z = Math.cos(cameraAngleY) * Math.cos(cameraAngleX) * radius;
         camera.lookAt(0, 0, 0);
-        
+
         mouseX = event.clientX;
         mouseY = event.clientY;
       }
     };
-    
+
     renderer.domElement.addEventListener('mousedown', onMouseDown);
     renderer.domElement.addEventListener('mouseup', onMouseUp);
     renderer.domElement.addEventListener('mousemove', onMouseMove);
@@ -205,14 +205,14 @@ const Payload3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
     } else {
       window.addEventListener('resize', handleResize);
     }
-    
+
     // Animation loop
     const animate = () => {
       requestAnimationFrame(animate);
       renderer.render(scene, camera);
     };
     animate();
-    
+
     // Cleanup
     const mountNode = mountRef.current;
     return () => {
@@ -237,46 +237,46 @@ const Payload3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
   // Update payload rotation based on gyro data with smooth transitions
   useEffect(() => {
     if (!payloadRef.current || !isConnected) return;
-    
+
     // Convert gyro data to rotation (in degrees) with calibration
     const calibratedRoll = (gyroX || 0) - CALIBRATION_OFFSETS.roll;
     const calibratedPitch = (gyroY || 0) - CALIBRATION_OFFSETS.pitch;
     const calibratedYaw = (gyroZ || 0) - CALIBRATION_OFFSETS.yaw;
-    
+
     const targetRoll = calibratedRoll * Math.PI / 180;   // X-axis rotation
     const targetPitch = calibratedPitch * Math.PI / 180;  // Y-axis rotation  
     const targetYaw = calibratedYaw * Math.PI / 180;    // Z-axis rotation
-    
+
     // Smooth rotation animation
     const animateRotation = () => {
       if (!payloadRef.current) return;
-      
+
       const currentRoll = payloadRef.current.rotation.x;
       const currentPitch = payloadRef.current.rotation.z;
       const currentYaw = payloadRef.current.rotation.y;
-      
+
       // Smooth interpolation (lerp)
       const lerpFactor = 0.1;
       payloadRef.current.rotation.x = currentRoll + (targetRoll - currentRoll) * lerpFactor;
       payloadRef.current.rotation.z = currentPitch + (targetPitch - currentPitch) * lerpFactor;
       payloadRef.current.rotation.y = currentYaw + (targetYaw - currentYaw) * lerpFactor;
-      
+
       // Update altitude position with smooth transition
       const targetAltitude = Math.max(0, (altitude || 0) / 100);
       const currentAltitude = payloadRef.current.position.y;
       payloadRef.current.position.y = currentAltitude + (targetAltitude - currentAltitude) * lerpFactor;
-      
+
       // Continue animation if there's still movement
       if (Math.abs(targetRoll - payloadRef.current.rotation.x) > 0.001 ||
-          Math.abs(targetPitch - payloadRef.current.rotation.z) > 0.001 ||
-          Math.abs(targetYaw - payloadRef.current.rotation.y) > 0.001 ||
-          Math.abs(targetAltitude - payloadRef.current.position.y) > 0.001) {
+        Math.abs(targetPitch - payloadRef.current.rotation.z) > 0.001 ||
+        Math.abs(targetYaw - payloadRef.current.rotation.y) > 0.001 ||
+        Math.abs(targetAltitude - payloadRef.current.position.y) > 0.001) {
         requestAnimationFrame(animateRotation);
       }
     };
-    
+
     animateRotation();
-    
+
   }, [gyroX, gyroY, gyroZ, altitude, isConnected]);
 
   return (
@@ -284,8 +284,8 @@ const Payload3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
       <div className="mb-4 text-center">
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Payload 3D Modeli</h3>
         <p className="text-sm text-gray-600">
-          Roll: {gyroX?.toFixed(1) || '0.0'}° | 
-          Pitch: {gyroY?.toFixed(1) || '0.0'}° | 
+          Roll: {gyroX?.toFixed(1) || '0.0'}° |
+          Pitch: {gyroY?.toFixed(1) || '0.0'}° |
           Yaw: {gyroZ?.toFixed(1) || '0.0'}°
         </p>
         <p className="text-xs text-cyan-600 mt-1">
@@ -295,9 +295,9 @@ const Payload3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
           Mouse ile kamera açısını değiştir
         </p>
       </div>
-      
+
       <div ref={mountRef} className="w-full h-[240px] sm:h-[300px] lg:h-[380px] border border-gray-300 rounded-lg bg-gray-50" />
-      
+
       {/* Gyro data visualization */}
       <div className="mt-4 p-4 bg-gray-100 rounded-lg">
         <h4 className="text-sm font-medium text-gray-900 mb-2">Payload Gyro Verileri</h4>
@@ -306,10 +306,10 @@ const Payload3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
             <div className="text-gray-600">Roll (X)</div>
             <div className="text-lg font-bold text-blue-600">{gyroX?.toFixed(1) || '0.0'}°</div>
             <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-              <div 
+              <div
                 className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                style={{ 
-                  width: `${Math.min(100, Math.max(0, ((gyroX || 0) + 180) / 3.6))}%` 
+                style={{
+                  width: `${Math.min(100, Math.max(0, ((gyroX || 0) + 180) / 3.6))}%`
                 }}
               />
             </div>
@@ -318,10 +318,10 @@ const Payload3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
             <div className="text-gray-600">Pitch (Y)</div>
             <div className="text-lg font-bold text-green-600">{gyroY?.toFixed(1) || '0.0'}°</div>
             <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-              <div 
+              <div
                 className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                style={{ 
-                  width: `${Math.min(100, Math.max(0, ((gyroY || 0) + 180) / 3.6))}%` 
+                style={{
+                  width: `${Math.min(100, Math.max(0, ((gyroY || 0) + 180) / 3.6))}%`
                 }}
               />
             </div>
@@ -330,10 +330,10 @@ const Payload3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
             <div className="text-gray-600">Yaw (Z)</div>
             <div className="text-lg font-bold text-red-600">{gyroZ?.toFixed(1) || '0.0'}°</div>
             <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-              <div 
+              <div
                 className="bg-red-500 h-2 rounded-full transition-all duration-300"
-                style={{ 
-                  width: `${Math.min(100, Math.max(0, ((gyroZ || 0) + 180) / 3.6))}%` 
+                style={{
+                  width: `${Math.min(100, Math.max(0, ((gyroZ || 0) + 180) / 3.6))}%`
                 }}
               />
             </div>
