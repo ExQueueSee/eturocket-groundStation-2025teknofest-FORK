@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 
-const Rocket3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
+const Rocket3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected, isDarkMode }) => {
   // Kalibrasyon değerleri - yüzeye dik ve yukarı bakan hal için referans
   const CALIBRATION_OFFSETS = {
     gyroX: 83.7,  // Referans Gyro X değeri
@@ -14,13 +14,14 @@ const Rocket3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
   const cameraRef = useRef(null);
   const rocketRef = useRef(null);
   const controlsRef = useRef(null);
+  const groundRef = useRef(null); // Zemin rengini güncellemek için eklendi
 
   useEffect(() => {
     if (!mountRef.current) return;
 
     // Scene setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf0f0f0);
+    scene.background = new THREE.Color(isDarkMode ? 0x1F2937 : 0xf0f0f0);
     
     // Camera setup
     const camera = new THREE.PerspectiveCamera(50, 400 / 300, 0.1, 1000);
@@ -36,7 +37,7 @@ const Rocket3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
     mountRef.current.appendChild(renderer.domElement);
     
     // Lighting
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+    const ambientLight = new THREE.AmbientLight(0x404040, isDarkMode ? 0.3 : 0.6);
     scene.add(ambientLight);
     
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -48,12 +49,13 @@ const Rocket3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
     
     // Ground plane
     const groundGeometry = new THREE.PlaneGeometry(20, 20);
-    const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x90EE90 });
+    const groundMaterial = new THREE.MeshLambertMaterial({ color: isDarkMode ? 0x2E4A35 : 0x90EE90 });
     const ground = new THREE.Mesh(groundGeometry, groundMaterial);
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -2;
     ground.receiveShadow = true;
     scene.add(ground);
+    groundRef.current = ground; // Referansa atandı
     
     // Create rocket model
     const rocketGroup = new THREE.Group();
@@ -175,6 +177,21 @@ const Rocket3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
     };
   }, []);
 
+  // TEMA DEĞİŞTİĞİNDE ARKAPLANI ANLIK GÜNCELLE
+  useEffect(() => {
+    if (sceneRef.current) {
+        sceneRef.current.background = new THREE.Color(isDarkMode ? 0x1F2937 : 0xf0f0f0);
+        sceneRef.current.children.forEach(child => {
+            if (child instanceof THREE.AmbientLight) {
+                child.intensity = isDarkMode ? 0.3 : 0.6;
+            }
+        });
+        if (groundRef.current) {
+            groundRef.current.material.color.setHex(isDarkMode ? 0x2E4A35 : 0x90EE90);
+        }
+    }
+  }, [isDarkMode]);
+
   // Update rocket rotation based on gyro data with smooth transitions
   useEffect(() => {
     if (!rocketRef.current || !isConnected) return;
@@ -223,30 +240,30 @@ const Rocket3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
   return (
     <div className="w-full">
       <div className="mb-4 text-center">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Roket 3D Modeli</h3>
-        <p className="text-sm text-gray-600">
+        <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>Roket 3D Modeli</h3>
+        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
           Gyro X: {gyroX?.toFixed(1) || '0.0'}° | 
           Gyro Y: {gyroY?.toFixed(1) || '0.0'}° | 
           Gyro Z: {gyroZ?.toFixed(1) || '0.0'}°
         </p>
-        <p className="text-xs text-blue-600 mt-1">
+        <p className={`text-xs mt-1 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
           Kalibrasyon: X-{CALIBRATION_OFFSETS.gyroX}°, Y-{CALIBRATION_OFFSETS.gyroY}°, Z-{CALIBRATION_OFFSETS.gyroZ}°
         </p>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
           Mouse ile kamera açısını değiştir
         </p>
       </div>
       
-      <div ref={mountRef} className="w-full h-full border border-gray-300 rounded-lg bg-gray-50" />
+      <div ref={mountRef} className={`w-full h-full border rounded-lg ${isDarkMode ? 'border-gray-700 bg-[#1F2937]' : 'border-gray-300 bg-gray-50'}`} />
       
       {/* Gyro data visualization */}
-      <div className="mt-4 p-4 bg-gray-100 rounded-lg">
-        <h4 className="text-sm font-medium text-gray-900 mb-2">Gyro Verileri</h4>
+      <div className={`mt-4 p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+        <h4 className={`text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>Gyro Verileri</h4>
         <div className="grid grid-cols-3 gap-4 text-xs">
           <div className="text-center">
-            <div className="text-gray-600">Roll (X)</div>
-            <div className="text-lg font-bold text-blue-600">{gyroX?.toFixed(1) || '0.0'}°</div>
-            <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+            <div className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>Roll (X)</div>
+            <div className={`text-lg font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>{gyroX?.toFixed(1) || '0.0'}°</div>
+            <div className={`w-full rounded-full h-2 mt-1 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
               <div 
                 className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                 style={{ 
@@ -256,9 +273,9 @@ const Rocket3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
             </div>
           </div>
           <div className="text-center">
-            <div className="text-gray-600">Pitch (Y)</div>
-            <div className="text-lg font-bold text-green-600">{gyroY?.toFixed(1) || '0.0'}°</div>
-            <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+            <div className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>Pitch (Y)</div>
+            <div className={`text-lg font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>{gyroY?.toFixed(1) || '0.0'}°</div>
+            <div className={`w-full rounded-full h-2 mt-1 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
               <div 
                 className="bg-green-500 h-2 rounded-full transition-all duration-300"
                 style={{ 
@@ -268,9 +285,9 @@ const Rocket3D = ({ gyroX, gyroY, gyroZ, altitude, isConnected }) => {
             </div>
           </div>
           <div className="text-center">
-            <div className="text-gray-600">Yaw (Z)</div>
-            <div className="text-lg font-bold text-red-600">{gyroZ?.toFixed(1) || '0.0'}°</div>
-            <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+            <div className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>Yaw (Z)</div>
+            <div className={`text-lg font-bold ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{gyroZ?.toFixed(1) || '0.0'}°</div>
+            <div className={`w-full rounded-full h-2 mt-1 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
               <div 
                 className="bg-red-500 h-2 rounded-full transition-all duration-300"
                 style={{ 

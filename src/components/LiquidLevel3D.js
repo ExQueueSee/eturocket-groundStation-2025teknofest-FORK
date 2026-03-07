@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 
-const LiquidLevel3D = ({ liquidData }) => {
+const LiquidLevel3D = ({ liquidData, isDarkMode }) => {
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
@@ -14,7 +14,7 @@ const LiquidLevel3D = ({ liquidData }) => {
 
     // Scene setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xffffff); // Beyaz arkaplan
+    scene.background = new THREE.Color(isDarkMode ? 0x1F2937 : 0xffffff); // Dinamik arkaplan
     // Camera setup - daha iyi görünüm için ayarlandı
     const camera = new THREE.PerspectiveCamera(40, 1005 / 602, 0.1, 1000);
     camera.position.set(0, 3, 8);
@@ -29,7 +29,7 @@ const LiquidLevel3D = ({ liquidData }) => {
     mountRef.current.appendChild(renderer.domElement);
     
     // Lighting - daha aydınlık ortam
-    const ambientLight = new THREE.AmbientLight(0x606060, 0.8);
+    const ambientLight = new THREE.AmbientLight(0x606060, isDarkMode ? 0.4 : 0.8);
     scene.add(ambientLight);
     
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
@@ -45,7 +45,7 @@ const LiquidLevel3D = ({ liquidData }) => {
     // En alta daire ekle
     const baseCircleGeometry = new THREE.CylinderGeometry(6, 6, 0.2, 32);
     const baseCircleMaterial = new THREE.MeshPhongMaterial({ 
-      color: 0x444444,
+      color: isDarkMode ? 0x222222 : 0x444444,
       transparent: true,
       opacity: 0.2
     });
@@ -101,7 +101,7 @@ const LiquidLevel3D = ({ liquidData }) => {
         for (let bit = 0; bit < 8; bit++) {
           const segmentGeometry = new THREE.CylinderGeometry(0.25, 0.25, segmentHeight, 12);
           const segmentMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x333333,
+            color: isDarkMode ? 0x444444 : 0x333333,
             transparent: true,
             opacity: 0.3
           });
@@ -235,6 +235,18 @@ const LiquidLevel3D = ({ liquidData }) => {
     };
   }, []);
 
+  // TEMA DEĞİŞTİĞİNDE ARKAPLANI ANLIK GÜNCELLE
+  useEffect(() => {
+    if (sceneRef.current) {
+        sceneRef.current.background = new THREE.Color(isDarkMode ? 0x1F2937 : 0xffffff);
+        sceneRef.current.children.forEach(child => {
+            if (child instanceof THREE.AmbientLight) {
+                child.intensity = isDarkMode ? 0.4 : 0.8;
+            }
+        });
+    }
+  }, [isDarkMode]);
+
   // Update liquid levels when data changes
   useEffect(() => {
     if (!rodsRef.current || !liquidData) return;
@@ -257,8 +269,8 @@ const LiquidLevel3D = ({ liquidData }) => {
             segment.material.color.setHex(0x0066ff);
             segment.material.opacity = 0.8;
           } else {
-            // Bit 0 ise sönük (gri)
-            segment.material.color.setHex(0x333333);
+            // Bit 0 ise sönük (gri) - Tema Moduna Göre Rengi Değiştir
+            segment.material.color.setHex(isDarkMode ? 0x444444 : 0x333333);
             segment.material.opacity = 0.3;
           }
         });
@@ -266,7 +278,7 @@ const LiquidLevel3D = ({ liquidData }) => {
         // Liquid level indicator kaldırıldı - sadece segment'ler kullanılıyor
       }
     });
-  }, [liquidData]);
+  }, [liquidData, isDarkMode]);
 
   const parseLiquidData = (data) => {
     if (!data || data.length !== 192) return new Array(24).fill(0);
@@ -285,34 +297,34 @@ const LiquidLevel3D = ({ liquidData }) => {
   return (
     <div className="w-full">
       <div className="mb-4 text-center">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">3D Sıvı Seviye Sensörleri</h3>
-        <p className="text-sm text-gray-600">
+        <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>3D Sıvı Seviye Sensörleri</h3>
+        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
           {liquidData ? `24 sensör, ${liquidData.length} bit veri` : 'Veri bekleniyor...'}
         </p>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
           Mouse ile döndür
         </p>
       </div>
       
-      <div ref={mountRef} className="w-full h-full border border-gray-300 rounded-lg" />
+      <div ref={mountRef} className={`w-full h-full border rounded-lg overflow-hidden ${isDarkMode ? 'border-gray-700 bg-[#1F2937]' : 'border-gray-300 bg-white'}`} />
       
       {/* Sensör değerleri tablosu */}
       {liquidData && (
-        <div className="mt-4 p-4 bg-gray-100 rounded-lg">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Sensör Değerleri (8-bit)</h4>
+        <div className={`mt-4 p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+          <h4 className={`text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>Sensör Değerleri (8-bit)</h4>
           <div className="grid grid-cols-8 gap-2 text-xs">
             {rodsRef.current && rodsRef.current.map((rodData, index) => {
               const sensorNumber = rodData.sensorNumber;
               const level = parseLiquidData(liquidData)[sensorNumber - 1] || 0;
               return (
                 <div key={index} className="text-center">
-                  <div className="text-gray-600">S{sensorNumber}</div>
-                  <div className="text-gray-900 font-mono">{level}</div>
-                  <div className="text-xs text-gray-500">
+                  <div className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>S{sensorNumber}</div>
+                  <div className={`font-mono ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>{level}</div>
+                  <div className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
                     {level.toString(2).padStart(8, '0')}
                   </div>
                   <div 
-                    className="w-full h-2 bg-gray-200 rounded mt-1"
+                    className={`w-full h-2 rounded mt-1 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}
                     style={{
                       background: `linear-gradient(to top, 
                         rgb(0, ${Math.floor(level * 0.5)}, 255), 
